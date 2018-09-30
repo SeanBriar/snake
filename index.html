@@ -6,15 +6,22 @@
     <title>ahhh, Snake!</title>
   </head>
   <body>
+      <div id='scoreText'>
+        Your Score Is:
+      </div><div id="score">0</div>
+
       <canvas id="gameCanvas" width="300" height="300"></canvas>
 
       <script>
 
       // Constants
-        const canvas_border_color = "black"
+        const game_speed = 100
+        const canvas_border_color = "grey"
         const canvas_background_color = "white"
         const snake_color = 'lightgreen'
         const snake_border_color = 'darkgreen'
+        const food_color = 'red'
+        const food_border_color = 'darkred'
 
         let snake = [
           {x: 150, y: 150},
@@ -24,57 +31,121 @@
           {x: 110, y: 150},
         ]
 
+      // User's score
+        let score = 0
+      // When set to true the snake is changing direction
+        let changingDirection = false;
+      // food x-coordinate
+        let foodX
+      // food y-coordinate
+        let foodY
       // Horizontal velocity
         let dx = 10
-
       // Vertical velocity
         let dy = 0
 
+      // ///// Making the board
       // Get canvas element
         const gameCanvas = document.getElementById('gameCanvas')
-
       // Return a two dimensional drawing conext
         const ctx = gameCanvas.getContext('2d')
 
-      //  Select the color to fill the canvas
-        ctx.fillStyle = canvas_background_color
-        ctx.strokeStyle = canvas_border_color
+      // Start Game
+        main()
 
-      // Draw a "filled" rectangle to cover the entire canvas
-        ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height)
-      // Draw a 'border' around th entire canvas
-        ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height)
+      // Create first food location
+        createFood()
+
+      // Call changeDirection whenever a key is pressed
+        document.addEventListener('keydown', changeDirection)
 
 
-      // Move one step to the right
-        advanceSnake()
 
-      // change vertical velocity to 0
-        dx = 0
+        function main() {
+          if (didGameEnd()) return
 
-      // change horizontal velocity to 10
-        dy = -10
+            setTimeout(function onTick() {
+              changingDirection = false;
+              clearCanvas()
+              drawFood()
+              advanceSnake()
+              drawSnake()
 
-      // move one step up
-        advanceSnake()
+              main()
+            }, game_speed)
+        }
 
-      // Draw snake on the canvas
-        drawSnake()
 
-      // Advances the snake by changing the x coordinates of its parts
+        function clearCanvas() {
+          ctx.fillStyle = canvas_background_color
+          ctx.strokeStyle = canvas_border_color
+
+          ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height)
+          ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height)
+        }
+
+      // Check for wall collision - game end
+        function didGameEnd(){
+          for(let i = 4; i < snake.length; i++) {
+            const didCollide = snake[i].x === snake[0].x && snake[i].y === snake[0].y
+          }
+
+          const hitLeftWall = snake[0].x < 0
+          const hitRightWall = snake[0].x > gameCanvas.width - 10
+          const hitTopWall = snake[0].y < 0
+          const hitBottomWall = snake[0].y > gameCanvas.height - 10
+
+          return hitLeftWall || hitRightWall || hitTopWall || hitBottomWall
+        }
+
+      // Draw food on canvas
+        function drawFood() {
+          ctx.fillStyle = food_color;
+          ctx.strokestyle = food_border_color;
+          ctx.fillRect(foodX, foodY, 10, 10);
+          ctx.strokeRect(foodX, foodY, 10, 10);
+        }
+
+        // Advances the snake by changing the x coordinates of its parts
         // according to the horizontal velocity and the y coordinates of its parts
         // according to the vertical velocity
         function advanceSnake() {
           const head = {x: snake[0].x + dx, y: snake[0].y + dy}
           snake.unshift(head)
-          snake.pop()
+
+          const didEatFood = snake[0].x === foodX && snake[0].y === foodY
+          if (didEatFood) {
+            score += 10
+            document.getElementById('score').innerHTML = score
+            createFood()
+          } else {
+            snake.pop()
+          }
         }
-      // Draws snake on canvas
+
+      // Generates random number in multiples of ten
+        function randomTen(min, max) {
+          return Math.round((Math.random() * (max-min) + min) / 10) *10
+        }
+
+      // creates random (using randomTen) spot for snake food
+        function createFood() {
+          foodX = randomTen(0, gameCanvas.width - 10)
+          foodY = randomTen(0, gameCanvas.height - 10)
+
+          snake.forEach(function isFoodOnSnake(part){
+            const foodIsOnSnake = part.x == foodX && part.y == foodY
+            if (foodIsOnSnake)
+              createFood()
+          })
+        }
+
+        // Draws snake on canvas
         function drawSnake(){
           snake.forEach(drawSnakePart)
         }
 
-      // Draws part of the snake on the canvas
+        // Draws part of the snake on the canvas
         function drawSnakePart(snakePart) {
           ctx.fillStyle = snake_color
           ctx.strokeStyle = snake_border_color
@@ -83,6 +154,9 @@
           ctx.strokeRect(snakePart.x, snakePart.y, 10, 10)
         }
 
+      //  Changes the vertical and horizontal velocity of the snake according to the key that was pressed.
+      // The direction cannot be switched to the opposite direction, to prevent the snake from reversing
+      //  For example if the the direction is 'right' it cannot become 'left'
         function changeDirection(event) {
           const left_key = 37
           const right_key = 39
@@ -116,29 +190,6 @@
           }
         }
 
-
-        function clearCanvas() {
-          ctx.fillStyle = 'white'
-          ctx.strokeStyle = 'black'
-
-          ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height)
-          ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height)
-        }
-
-
-        function main() {
-          setTimeout(function onTick() {
-            clearCanvas()
-            advanceSnake()
-            drawSnake()
-            main()
-          }, 100)
-        }
-
-        main()
-        document.addEventListener("keydown", changeDirection)
-
-        // drawSnake()
       </script>
   </body>
 </html>
